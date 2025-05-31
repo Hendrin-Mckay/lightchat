@@ -7,6 +7,7 @@ import "core:os"
 import "core:thread"
 import "core:time"
 import "core:sync"
+
 import "core:encoding/json"
 import "core:strings"
 import "core:bufio"
@@ -15,10 +16,12 @@ import "core:bufio"
 import "../shared/types"
 import "../shared/protocol"
 
+
 // ClientSession stores information about a connected client
 ClientSession :: struct {
     id:          u64,
     conn:        net.Conn,
+
     user:        ^types.User,
     remote_addr: net.Address,
     current_channel_name: string, // Name of the channel the user is currently in
@@ -29,6 +32,7 @@ ChannelData :: struct {
     name:     string,
     users:    map[u64]^ClientSession, // Keyed by session.id
     messages: [dynamic]types.Message, // Message history
+
 }
 
 // Global state for managing clients
@@ -36,9 +40,11 @@ connected_clients := make(map[u64]^ClientSession)
 clients_mutex     : sync.Mutex
 next_client_id    : u64 = 1
 
+
 // Global state for managing chat channels
 chat_channels   := make(map[string]^ChannelData)
 channels_mutex  : sync.Mutex
+
 
 
 // Helper to send a JSON message with a newline
@@ -46,8 +52,10 @@ send_json_message :: proc(conn: net.Conn, session_id: u64, message: any) -> (err
     response_bytes, marshal_err := json.marshal(message)
     if marshal_err != nil {
         log.errorf("Client %d: Failed to marshal message type %T: %v", session_id, message, marshal_err)
+
         return net.EINVAL
     }
+
 
     newline_char := []u8{'\n'}
     response_final := make([]u8, len(response_bytes) + len(newline_char))
@@ -56,18 +64,22 @@ send_json_message :: proc(conn: net.Conn, session_id: u64, message: any) -> (err
 
     _, write_err := net.write_all(conn, response_final)
     if write_err != nil {
+
         // Log error, but don't make it fatal for the helper itself, caller can decide.
         // log.errorf("Client %d: Error sending message type %T: %v", session_id, message, write_err)
+
         return write_err
     }
     log.debugf("Client %d: Sent message type %T successfully.", session_id, message)
     return nil
 }
 
+
 // handle_client is responsible for managing a single client's lifecycle using JSON messages.
 handle_client :: proc(conn: net.Conn) {
     remote_addr := net.remote_address(conn)
     session_id: u64
+
     session: ^ClientSession
 
     sync.mutex_lock(&clients_mutex)
@@ -95,12 +107,14 @@ handle_client :: proc(conn: net.Conn) {
             }
             sync.mutex_unlock(&channels_mutex)
         }
+
         net.close(conn)
         sync.mutex_lock(&clients_mutex)
         delete(connected_clients, session_id)
         sync.mutex_unlock(&clients_mutex)
         log.infof("Client %v (ID %d) disconnected. Active clients: %d", remote_addr, session_id, len(connected_clients))
     }
+
 
     reader := bufio.make_reader(conn, bufio.DEFAULT_BUFFER_SIZE)
     for {
@@ -246,12 +260,14 @@ handle_client :: proc(conn: net.Conn) {
             log.infof("Client %d: Login successful for user '%s'.", session.id, session.user.username)
             success_resp := protocol.S2C_Login_Success_Message{ base = protocol.BaseMessage{type = .S2C_LOGIN_SUCCESS}, user = session.user^, servers = make([dynamic]types.Server), }
             if send_json_message(session.conn, session.id, success_resp) != nil { break }
+
         }
     }
 }
 
 main :: proc() {
     log.set_default_logger(log.create_console_logger(opt_level=.Debug))
+
     sync.mutex_lock(&channels_mutex)
     general_channel_name := "general"
     if _, exists := chat_channels[general_channel_name]; !exists {
@@ -267,13 +283,16 @@ main :: proc() {
     defer net.close(listener)
     log.infof("Server started, listening on %s.", address)
 
+
     for {
         conn, accept_err := net.accept(listener)
         if accept_err != nil {
             log.errorf("Failed to accept connection: %v", accept_err)
+
             if accept_err == net.EMFILE || accept_err == net.ENFILE { log.critical("Too many open files."); thread.sleep(1 * time.Second) }
             continue
         }
+
         log.infof("Accepted new connection from %v", net.remote_address(conn))
         go handle_client(conn)
     }
