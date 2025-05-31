@@ -9,9 +9,11 @@ import "core:os"
 
 import shared "../../shared"
 
+
 WebSocketServer :: struct {
     port:        int,
     clients:     map[u64]^Client,
+
     channels:    map[u64]^shared.Channel,
     mutex:       sync.Mutex,
     next_client_id: u64,
@@ -19,6 +21,7 @@ WebSocketServer :: struct {
 
 Client :: struct {
     id:         u64,
+
     connection: net.TCP_Socket,
     user:       ^shared.User,
     current_channel_id: u64,
@@ -153,4 +156,5 @@ start_server :: proc(server: ^WebSocketServer) {
             net.close_socket(conn)
         }
     }
+
 }
