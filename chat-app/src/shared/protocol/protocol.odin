@@ -10,13 +10,18 @@ MessageType :: enum {
     C2S_SEND_MESSAGE,
     C2S_JOIN_CHANNEL, // Example: Client requests to join a channel
     C2S_CREATE_CHANNEL, // Example: Client requests to create a new channel
+    C2S_REGISTER_USER,
 
     // Server to Client
     S2C_LOGIN_SUCCESS,
+    S2C_REGISTRATION_SUCCESS,
+    S2C_REGISTRATION_FAILURE,
     S2C_LOGIN_FAILURE,
     S2C_NEW_MESSAGE,
     S2C_USER_JOINED_CHANNEL, // Example: Server notifies clients that a user joined
+    S2C_USER_LEFT_CHANNEL,   // Example: Server notifies clients that a user left a channel
     S2C_CHANNEL_CREATED, // Example: Server notifies clients that a channel was created
+    S2C_MESSAGE_HISTORY, // Sent to a client after joining a channel
     S2C_ERROR, // Generic error message from server
 }
 
@@ -105,6 +110,43 @@ S2C_Error_Message :: struct {
 
 }
 
+// C2S_Register_User_Message is sent by the client to register a new account.
+C2S_Register_User_Message :: struct {
+    using base: BaseMessage, // Should be C2S_REGISTER_USER
+    username:   string,
+    email:      string,
+    password:   string,
+}
+
+// S2C_Registration_Success_Message is sent by the server on successful registration.
+S2C_Registration_Success_Message :: struct {
+    using base: BaseMessage, // Should be S2C_REGISTRATION_SUCCESS
+    user_id:    u64,
+    username:   string,
+    // Consider including the full types.User if the client needs more info immediately
+}
+
+// S2C_Registration_Failure_Message is sent by the server on failed registration.
+S2C_Registration_Failure_Message :: struct {
+    using base: BaseMessage, // Should be S2C_REGISTRATION_FAILURE
+    error_message: string,
+}
+
+// S2C_Message_History_Message is sent to a client after joining a channel, containing recent messages.
+S2C_Message_History_Message :: struct {
+    using base: BaseMessage, // Should be S2C_MESSAGE_HISTORY
+    channel_name: string,
+    messages: [dynamic]types.Message,
+}
+
+// S2C_User_Left_Channel_Message is sent by the server to notify clients in a channel about a user leaving.
+S2C_User_Left_Channel_Message :: struct {
+    using base: BaseMessage, // Should be S2C_USER_LEFT_CHANNEL
+    user_id:      u64,       // ID of the user who left
+    username:     string,    // Username of the user who left
+    channel_name: string,    // Name of the channel the user left
+}
+
 // Helper procedure to create a C2S_Login_Message
 create_c2s_login_message :: proc(username, password: string) -> C2S_Login_Message {
     return C2S_Login_Message{
@@ -133,3 +175,48 @@ create_c2s_join_channel_message :: proc(channel_name: string) -> C2S_Join_Channe
     };
 }
 
+// Helper procedure to create a C2S_Register_User_Message
+create_c2s_register_user_message :: proc(username, email, password: string) -> C2S_Register_User_Message {
+    return C2S_Register_User_Message{
+        base = BaseMessage{type = .C2S_REGISTER_USER},
+        username = username,
+        email = email,
+        password = password,
+    };
+}
+
+// Helper procedure to create an S2C_Registration_Success_Message
+create_s2c_registration_success_message :: proc(user_id: u64, username: string) -> S2C_Registration_Success_Message {
+    return S2C_Registration_Success_Message{
+        base = BaseMessage{type = .S2C_REGISTRATION_SUCCESS},
+        user_id = user_id,
+        username = username,
+    };
+}
+
+// Helper procedure to create an S2C_Registration_Failure_Message
+create_s2c_registration_failure_message :: proc(error_message: string) -> S2C_Registration_Failure_Message {
+    return S2C_Registration_Failure_Message{
+        base = BaseMessage{type = .S2C_REGISTRATION_FAILURE},
+        error_message = error_message,
+    };
+}
+
+// Helper procedure to create an S2C_Message_History_Message
+create_s2c_message_history_message :: proc(channel_name: string, messages: [dynamic]types.Message) -> S2C_Message_History_Message {
+    return S2C_Message_History_Message{
+        base = BaseMessage{type = .S2C_MESSAGE_HISTORY},
+        channel_name = channel_name,
+        messages = messages,
+    };
+}
+
+// Helper procedure to create an S2C_User_Left_Channel_Message
+create_s2c_user_left_channel_message :: proc(user_id: u64, username: string, channel_name: string) -> S2C_User_Left_Channel_Message {
+    return S2C_User_Left_Channel_Message{
+        base = BaseMessage{type = .S2C_USER_LEFT_CHANNEL},
+        user_id = user_id,
+        username = username,
+        channel_name = channel_name,
+    };
+}
