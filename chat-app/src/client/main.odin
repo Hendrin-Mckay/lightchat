@@ -6,12 +6,14 @@ import "core:fmt"
 import "core:log"
 import "core:strings"
 import "core:encoding/json"
+
 import "core:bufio"
 import "core:time"
 import "core:container/dynarray"
 
 import "../shared/protocol"
 import "../shared/types"
+
 
 // Helper to convert a null-terminated u8 buffer (C string) to an Odin string
 cstring_buffer_to_string :: proc(buffer: []u8) -> string {
@@ -38,12 +40,13 @@ App :: struct {
     window_height:   i32,
     image_cache:     map[string]rl.Texture2D,
 
-    // Login state
+
     username_buffer: [128]u8,
     password_buffer: [128]u8,
     username_box_active: bool,
     password_box_active: bool,
     login_error_message: string,
+
 
     // Network state
     conn: net.Conn,
@@ -61,6 +64,7 @@ App :: struct {
     chat_message_box_active: bool,
     current_chat_messages: [dynamic]types.Message,
     chat_error_message: string, // For errors specific to chat view (e.g. send failed)
+
 }
 
 main :: proc() {
@@ -92,6 +96,7 @@ main :: proc() {
 init_app :: proc(app: ^App) {
     app.image_cache = make(map[string]rl.Texture2D)
     log.info("Application initialized.")
+
 }
 
 disconnect_and_reset :: proc(app: ^App, reason: string) {
@@ -395,11 +400,13 @@ draw_app :: proc(app: ^App) {
         }
         // The GuiButton for "Send" is drawn here, but its click is handled in update_app
         rl.GuiButton(send_button_rect, "Send")
+
     }
 }
 
 cleanup_app :: proc(app: ^App) {
     if app.conn != nil { log.info("Closing network connection."); net.close(app.conn); app.conn = nil; app.is_connected = false }
     if app.logged_in_user != nil { free(app.logged_in_user); app.logged_in_user = nil }
+
     log.info("Application cleanup finished.")
 }
