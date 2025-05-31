@@ -34,7 +34,7 @@ Channel :: struct {
 Message :: struct {
     id:         u64,
     author_id:  u64,
-    channel_id: u64,
+    channel_name: string, // Name of the channel this message belongs to
     content:    string,
     image_path: string,  // For image attachments
     timestamp:  time.Time,
