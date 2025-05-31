@@ -125,7 +125,6 @@ create_c2s_send_message_message :: proc(content: string, image_path: string = ""
     };
 }
 
-
 // Helper for C2S_Join_Channel_Message
 create_c2s_join_channel_message :: proc(channel_name: string) -> C2S_Join_Channel_Message {
     return C2S_Join_Channel_Message{

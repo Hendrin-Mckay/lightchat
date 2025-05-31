@@ -41,8 +41,6 @@ App :: struct {
     image_cache:     map[string]rl.Texture2D,
 
 
-    // Login state
-
     username_buffer: [128]u8,
     password_buffer: [128]u8,
     username_box_active: bool,
@@ -98,8 +96,8 @@ main :: proc() {
 init_app :: proc(app: ^App) {
     app.image_cache = make(map[string]rl.Texture2D)
     log.info("Application initialized.")
-}
 
+}
 
 disconnect_and_reset :: proc(app: ^App, reason: string) {
     if app.conn != nil {
@@ -109,7 +107,6 @@ disconnect_and_reset :: proc(app: ^App, reason: string) {
     app.is_connected = false
     app.is_connecting = false
     app.login_attempted_this_connection = false
-
     if reason != "" {
         // If in LOGIN state, update login_error_message. Otherwise, could set a global error or chat_error_message.
         if app.state == .LOGIN {
@@ -117,7 +114,6 @@ disconnect_and_reset :: proc(app: ^App, reason: string) {
         } else {
             app.chat_error_message = reason // Use chat_error_message for non-login state errors
         }
-
     }
     log.infof("Disconnected. Reason: %s", reason)
 }

@@ -75,7 +75,6 @@ send_json_message :: proc(conn: net.Conn, session_id: u64, message: any) -> (err
     return nil
 }
 
-
 // handle_client is responsible for managing a single client's lifecycle using JSON messages.
 handle_client :: proc(conn: net.Conn) {
     remote_addr := net.remote_address(conn)
